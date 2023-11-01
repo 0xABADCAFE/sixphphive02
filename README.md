@@ -10,7 +10,7 @@
 
 A CPU I've never used, emulated in a language that makes no sense. What could possibly go wrong?
 
-## Motivatiom
+## Motivation
 
 The 6502 is a comparatively simple processor that is extremely well documented. The goal is to implement the CPU and support for RAM, ROM and other devices that can be mapped within the 64K address space of the processor. Although the 6502 is the intended target, in principle it should be possible to implement other similar 8-bit processors.
 
