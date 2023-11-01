@@ -22,13 +22,14 @@ namespace ABadCafe\SixPHPhive02\Device;
  */
 class Memory implements IPageMappable {
 
-    private int    $iBaseAddress = 0;
-    private int    $iLength      = 0;
-    private string $sName;
+    protected int    $iBaseAddress = 0;
+    protected int    $iLastAddress = 0;
+    protected int    $iLength      = 0;
+    protected string $sName;
 
-    private static int $iUnit = 0;
+    protected static int $iUnit = 0;
 
-    private string $sBinary;
+    protected string $sBinary;
 
     /**
      * Requested byte lenght is rounded to the IPageMappable::PAGE_SIZE.
@@ -42,7 +43,7 @@ class Memory implements IPageMappable {
         }
         $this->iLength = $iByteLength >> 8;
         $this->hardReset();
-        $this->sName = sprintf("%s unit %d (%d bytes)", $this->getType(), self::$iUnit++, $iByteLength);
+        $this->sName = sprintf("%s [unit %d] (%d bytes)", $this->getType(), self::$iUnit++, $iByteLength);
     }
 
     public function softReset(): self {
@@ -71,7 +72,32 @@ class Memory implements IPageMappable {
 
     public function setBasePage(int $iPage): self {
         $this->iBaseAddress = $iPage << 8;
+        $this->iLastAddress = $this->iBaseAddress + ($this->iLength << 8) - 1;
         return $this;
+    }
+
+    public function getPageDump(int $iAddress): ?string {
+        if ($iAddress < $this->iBaseAddress || $iAddress > $this->iLastAddress) {
+            return null;
+        }
+
+        $sOutput = '';
+
+        $iAddress &= 0xFF00;
+        $iStart = ($iAddress - $this->iBaseAddress);
+        $iRows  = self::PAGE_SIZE>>5;
+        while ($iRows--) {
+            $sRow = substr($this->sBinary, $iStart, 32);
+            $sOutput .= sprintf(
+                "\t\$%04X: %s\n",
+                $iAddress,
+                chunk_split(bin2hex($sRow), 2, " ")
+            );
+            $iStart += 32;
+            $iAddress += 32;
+        }
+
+        return $sOutput;
     }
 
     public function getName(): string {

@@ -68,6 +68,15 @@ class AddressMap implements IPageMappable {
         return $this;
     }
 
+    public function getPageDump(int $iAddress): ?string {
+        $iAddress &= 0xFFFF;
+        $iPage = $iAddress >> 8;
+        if (isset($this->aPageMap[$iPage])) {
+            return $this->aPageMap[$iPage]->getPageDump($iAddress);
+        }
+        return null;
+    }
+
     /**
      * @inheritDoc
      */

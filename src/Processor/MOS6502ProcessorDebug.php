@@ -179,6 +179,9 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
                 );
             }
         }
+
+        echo $this->oOutsideDirect->getPageDump(0x4000), "\n";
+
         //$fTime = microtime(true) - $fMark;
 
         //printf("Completed %d ops in %.6f seconds, %.2f op/s\n", $iOps, $fTime, $iOps/$fTime);

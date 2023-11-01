@@ -33,4 +33,9 @@ interface IPageMappable extends IByteAccessible {
      */
     public function setBasePage(int $iPage): self;
 
+    /**
+     * Return a string dump of the page containing the address. If the address
+     * is present, returns null.
+     */
+    public function getPageDump(int $iAddress): ?string;
 }
