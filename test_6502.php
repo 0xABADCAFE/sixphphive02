@@ -22,8 +22,9 @@ $oMap
     ->attach(new Device\ReadOnlyMemory(file_get_contents('data/AllSuiteA.bin')), 0x4000);
 
 
+
 $o6502 = new Processor\MOS6502ProcessorDebug($oMap);
-//$o6502 = new Processor\MOS6502Processor(new Device\BusSnooper($oMap));
+//$o6502 = new Processor\MOS6502Processor($oMap);
 $o6502
     ->setInitialPC(0x4000)
     ->start();

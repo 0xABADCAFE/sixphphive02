@@ -24,12 +24,37 @@ use LogicException;
  */
 class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsructionDisassembly {
 
+    protected const REG_CHANGED_TPL = "\x1b[1m\x1b[48:5:%dm%02X\x1b[m";
+
     protected IByteAccessible $oOutsideDirect;
 
-    public function __construct(IByteAccessible $oOutside) {
-        parent::__construct(new BusSnooper($oOutside));
-        $this->oOutsideDirect = $oOutside;
+    protected int $iDelay;
+
+    protected bool $bColour;
+
+    // Shadow regs
+    protected int
+        $iSAccumulator,      // 8-bit
+        $iSXIndex,           // 8-bit
+        $iSYIndex,           // 8-bit
+        $iSStackPointer,     // 8-bit
+        $iSProgramCounter,   // 16-bit
+        $iSStatus            // 8-bit,
+    ;
+
+    public function __construct(IByteAccessible $oOutside, int $iDelay = 25000) {
+        if ($oOutside instanceof BusSnooper) {
+            parent::__construct($oOutside);
+            $this->oOutsideDirect = $oOutside->bypass();
+        } else {
+            parent::__construct(new BusSnooper($oOutside));
+            $this->oOutsideDirect = $oOutside;
+        }
+        $this->iDelay = $iDelay;
+
+        $this->bColour = stream_isatty(STDOUT);
     }
+
 
     /**
      * @inheritDoc
@@ -122,32 +147,74 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
         $iOps     = 0;
         //$fMark    = microtime(true);
         while ($bRunning) {
-            $iOpcode = $this->oOutside->readByte($this->iProgramCounter);
+            $this->oOutside->resetSnoops();
+            $iOpcode    = $this->oOutside->readByte($this->iProgramCounter);
+            $iExpectNext = $this->iProgramCounter + self::OP_SIZE[$iOpcode];
             printf(
-                "\t%04X: %-12s : ",
+                "\t%04X: %-12s | ",
                 $this->iProgramCounter,
                 $this->decodeInstruction($this->iProgramCounter)
             );
 
-            usleep(25000);
+            usleep($this->iDelay);
 
             $bRunning = $this->executeOpcode($iOpcode);
             $iCycles += self::OP_CYCLES[$iOpcode];
             ++$iOps;
 
             printf(
-                " A:%02X X:%02X Y:%02X S:%02X SR:%s\n",
-                $this->iAccumulator,
-                $this->iXIndex,
-                $this->iYIndex,
-                $this->iStackPointer,
-                $this->translateFlags($this->iStatus)
+                "A:%s X:%s Y:%s S:%s SR:%s | %s\n",
+                $this->renderA(),
+                $this->renderX(),
+                $this->renderY(),
+                $this->renderSP(),
+                $this->translateFlags($this->iStatus),
+                $this->oOutside->getSnoops()
             );
-
+            if ($this->iProgramCounter != $iExpectNext) {
+                printf(
+                    "\nJUMP TAKEN [PC reloaded \$%04X, following instruction was \$%04X]\n",
+                    $this->iProgramCounter,
+                    $iExpectNext
+                );
+            }
         }
         //$fTime = microtime(true) - $fMark;
 
         //printf("Completed %d ops in %.6f seconds, %.2f op/s\n", $iOps, $fTime, $iOps/$fTime);
     }
 
+    protected function renderA(): string {
+        return $this->renderRegChanged($this->iSAccumulator, $this->iAccumulator);
+    }
+
+    protected function renderX(): string {
+        return $this->renderRegChanged($this->iSXIndex, $this->iXIndex);
+    }
+
+    protected function renderY(): string {
+        return $this->renderRegChanged($this->iSYIndex, $this->iYIndex);
+    }
+
+    protected function renderSP(): string {
+        return $this->renderRegChanged($this->iSStackPointer, $this->iStackPointer);
+    }
+
+    protected function renderRegChanged(int &$iFrom, int &$iTo): string {
+        if ($iFrom !== $iTo) {
+            $iFrom = $iTo;
+            return sprintf(self::REG_CHANGED_TPL, 1, $iTo);
+        }
+        return sprintf("%02X", $iTo);
+    }
+
+    protected function reset(): void {
+        parent::reset();
+        $this->iSAccumulator    = $this->iAccumulator;
+        $this->iSXIndex         = $this->iXIndex;
+        $this->iSYIndex         = $this->iYIndex;
+        $this->iSStackPointer   = $this->iStackPointer;
+        $this->iSProgramCounter = $this->iProgramCounter;
+        $this->iSStatus         = $this->iStatus;
+    }
 }

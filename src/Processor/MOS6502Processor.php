@@ -158,10 +158,10 @@ class MOS6502Processor implements
     }
 
 
-    protected function readByteSigned(int $iAddress): int {
-        $iValue = ord($this->sMemory[$iAddress & self::MEM_MASK]);
-        return ($iValue & self::F_NEGATIVE) ? $iValue - 256 : $iValue;
-    }
+//     protected function readByteSigned(int $iAddress): int {
+//         $iValue = ord($this->sMemory[$iAddress & self::MEM_MASK]);
+//         return ($iValue & self::F_NEGATIVE) ? $iValue - 256 : $iValue;
+//     }
 
     /**
      * Read a raw 16-bit value from the given address. Returns an unsigned value. Automatically handles addresses that
