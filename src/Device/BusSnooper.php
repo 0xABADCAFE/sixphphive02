@@ -25,11 +25,13 @@ class BusSnooper implements IByteAccessible {
 
     private string $sAccessed = '';
 
+    private bool $bColour;
     /**
      * Wrap an IByteAccessible instance and collect access info
      */
-    public function __construct(IByteAccessible $oTarget) {
+    public function __construct(IByteAccessible $oTarget, bool $bColour) {
         $this->oTarget = $oTarget;
+        $this->bColour = $bColour;
     }
 
 
@@ -62,7 +64,11 @@ class BusSnooper implements IByteAccessible {
     }
 
     public function writeByte(int $iAddress, int $iValue): void {
-        $this->sAccessed .= sprintf(" \x1b[1m\x1b[48:5:%dm[W: \$%02X => $%04X]\x1b[m", 1, $iValue, $iAddress);
+        if ($this->bColour) {
+            $this->sAccessed .= sprintf(" \x1b[1m\x1b[48:5:%dm[W: \$%02X => $%04X]\x1b[m", 1, $iValue, $iAddress);
+        } else {
+            $this->sAccessed .= sprintf(" [W: \$%02X => $%04X]", $iValue, $iAddress);
+        }
         if (isset($this->aWriteMonitors[$iAddress])) {
             $cCallable = $this->aWriteMonitors[$iAddress];
             $cCallable($iAddress, $iValue);

@@ -43,16 +43,17 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
     ;
 
     public function __construct(IByteAccessible $oOutside, int $iDelay = 25000) {
+        $this->bColour = stream_isatty(STDOUT);
         if ($oOutside instanceof BusSnooper) {
             parent::__construct($oOutside);
             $this->oOutsideDirect = $oOutside->bypass();
         } else {
-            parent::__construct(new BusSnooper($oOutside));
+            parent::__construct(new BusSnooper($oOutside, $this->bColour));
             $this->oOutsideDirect = $oOutside;
         }
         $this->iDelay = $iDelay;
 
-        $this->bColour = stream_isatty(STDOUT);
+
     }
 
 
@@ -67,12 +68,14 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
     public function translateFlags(int $iFlags): string {
         $sFlags = '';
         $sFlags .= $iFlags & self::F_NEGATIVE  ? 'N' : '-';
+        $sFlags .= $iFlags & self::F_OVERFLOW  ? 'V' : '-';
+        $sFlags .= $iFlags & self::F_UNUSED    ? 'X' : '-';
+        $sFlags .= $iFlags & self::F_BREAK     ? 'B' : '-';
+        $sFlags .= $iFlags & self::F_DECIMAL   ? 'D' : '-';
+        $sFlags .= $iFlags & self::F_INTERRUPT ? 'I' : '-';
         $sFlags .= $iFlags & self::F_ZERO      ? 'Z' : '-';
         $sFlags .= $iFlags & self::F_CARRY     ? 'C' : '-';
-        $sFlags .= $iFlags & self::F_INTERRUPT ? 'I' : '-';
-        $sFlags .= $iFlags & self::F_DECIMAL   ? 'D' : '-';
-        $sFlags .= $iFlags & self::F_OVERFLOW  ? 'V' : '-';
-        $sFlags .= $iFlags & self::F_BREAK     ? 'B' : '-';
+
         return $sFlags;
     }
 
@@ -82,19 +85,13 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
             "\t A: \$%02X : %d\n" .
             "\t X: \$%02X : %d\n" .
             "\t Y: \$%02X : %d\n" .
-            "\t S: %s%s%s%s%s%s%s\n" .
+            "\t S: %s\n" .
             "\tSP: \$%02X (%d) \$%04X\n" .
             "\tPC: \$%04X (%d)\n",
             $this->iAccumulator, self::signByte($this->iAccumulator),
             $this->iXIndex, $this->iXIndex,
             $this->iYIndex, $this->iYIndex,
-            $this->iStatus & self::F_NEGATIVE  ? 'N' : '-',
-            $this->iStatus & self::F_ZERO      ? 'Z' : '-',
-            $this->iStatus & self::F_CARRY     ? 'C' : '-',
-            $this->iStatus & self::F_INTERRUPT ? 'I' : '-',
-            $this->iStatus & self::F_DECIMAL   ? 'D' : '-',
-            $this->iStatus & self::F_OVERFLOW  ? 'V' : '-',
-            $this->iStatus & self::F_BREAK     ? 'B' : '-',
+            $this->translateFlags($this->iStatus),
             $this->iStackPointer, $this->iStackPointer, $this->iStackPointer + self::STACK_BASE,
             $this->iProgramCounter, $this->iProgramCounter
         );
@@ -204,9 +201,11 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
     }
 
     protected function renderRegChanged(int &$iFrom, int &$iTo): string {
-        if ($iFrom !== $iTo) {
-            $iFrom = $iTo;
-            return sprintf(self::REG_CHANGED_TPL, 1, $iTo);
+        if ($this->bColour) {
+            if ($iFrom !== $iTo) {
+                $iFrom = $iTo;
+                return sprintf(self::REG_CHANGED_TPL, 1, $iTo);
+            }
         }
         return sprintf("%02X", $iTo);
     }

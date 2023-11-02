@@ -26,5 +26,6 @@ $oMap
 $o6502 = new Processor\MOS6502ProcessorDebug($oMap);
 //$o6502 = new Processor\MOS6502Processor($oMap);
 $o6502
+    ->setInitialSR(0x36)
     ->setInitialPC(0x4000)
     ->start();

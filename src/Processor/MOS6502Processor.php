@@ -93,6 +93,11 @@ class MOS6502Processor implements
         return $this;
     }
 
+    public function setInitialSR(int $iFlags): self {
+        $this->iStatus = $iFlags & 0xFF;
+        return $this;
+    }
+
     /**
      * Attach to the outside world.
      */
