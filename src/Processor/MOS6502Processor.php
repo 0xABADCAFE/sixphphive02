@@ -566,7 +566,7 @@ class MOS6502Processor implements
             }
 
             case self::ROL_ZP:  $this->rolMemory($this->addrZeroPageByte()); break;
-            case self::ROL_ZPX: $this->rolMemory($this->addrZeroPageByte()); break;
+            case self::ROL_ZPX: $this->rolMemory($this->addrZeroPageXByte()); break;
             case self::ROL_AB:  $this->rolMemory($this->addrAbsoluteByte()); break;
             case self::ROL_ABX: $this->rolMemory($this->addrAbsoluteXByte()); break;
 
@@ -579,7 +579,7 @@ class MOS6502Processor implements
             }
 
             case self::ROR_ZP:  $this->rorMemory($this->addrZeroPageByte()); break;
-            case self::ROR_ZPX: $this->rorMemory($this->addrZeroPageByte()); break;
+            case self::ROR_ZPX: $this->rorMemory($this->addrZeroPageXByte()); break;
             case self::ROR_AB:  $this->rorMemory($this->addrAbsoluteByte()); break;
             case self::ROR_ABX: $this->rorMemory($this->addrAbsoluteXByte()); break;
 
@@ -688,7 +688,8 @@ class MOS6502Processor implements
                     //echo "\nValue at 0x0210: ", $this->oOutside->readByte(0x0210), "\n";
                     return false;
                 }
-
+                // Avoid the program counter update, since we releaded it anyway
+                return true;
                 break;
             }
 
