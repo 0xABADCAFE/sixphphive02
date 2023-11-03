@@ -202,7 +202,7 @@ interface IInsructionDisassembly extends IOpcodeEnum {
 
         self::STX_ZP  => "STX \$%02X", // Zero Page
         self::STX_AB  => "STX \$%2\$02X%1\$02X", // Absolute
-        self::STX_ZPY => "STX  \$%02X,Y", // Zero Page,Y
+        self::STX_ZPY => "STX \$%02X,Y", // Zero Page,Y
 
         self::STY_ZP  => "STY \$%02X", // Zero Page
         self::STY_ZPX => "STY \$%02X,X", // Zero Page,X
