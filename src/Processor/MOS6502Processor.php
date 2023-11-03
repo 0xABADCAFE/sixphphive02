@@ -98,6 +98,11 @@ class MOS6502Processor implements
         return $this;
     }
 
+    public function setInitialSP(int $iPos): self {
+        $this->iStackPointer = $iPos & 0xFF;
+        return $this;
+    }
+
     /**
      * Attach to the outside world.
      */
@@ -285,6 +290,39 @@ class MOS6502Processor implements
         $this->iStatus |= ($iValue & self::F_NEGATIVE) | (($iValue & 0xFF) ? 0 : self::F_ZERO);
     }
 
+    protected function lsrMemory(int $iAddress): void {
+        $iValue   = $this->oOutside->readByte($iAddress);
+        $this->iStatus &= ~self::F_CARRY;
+        $this->iStatus |= ($iValue & self::F_CARRY);
+        $this->updateNZ($iValue >>= 1);
+        $this->oOutside->writeByte($iAddress, $iValue);
+    }
+
+    protected function aslMemory(int $iAddress): void {
+        $iValue   = $this->oOutside->readByte($iAddress);
+        $this->iStatus &= ~self::F_CARRY;
+        $this->iStatus |= ($iValue & self::F_NEGATIVE) >> 7; // sign -> carry
+        $this->updateNZ($iValue = (($iValue << 1) & 0xFF));
+        $this->oOutside->writeByte($iAddress, $iValue);
+    }
+
+    protected function rolMemory(int $iAddress): void {
+        $iValue   = $this->oOutside->readByte($iAddress);
+        $iCarry = ($this->iStatus & self::F_CARRY);
+        $this->iStatus &= ~self::F_CARRY;
+        $this->iStatus |= ($iValue & self::F_NEGATIVE) >> 7; // sign -> carry
+        $this->updateNZ( $iValue = ((($iValue << 1) | $iCarry) & 0xFF) );
+        $this->oOutside->writeByte($iAddress, $iValue);
+    }
+
+    protected function rorMemory(int $iAddress): void {
+        $iValue   = $this->oOutside->readByte($iAddress);
+        $iCarry = ($this->iStatus & self::F_CARRY) << 7; // carry -> sign
+        $this->iStatus &= ~self::F_CARRY;
+        $this->iStatus |= ($iValue & self::F_CARRY); // carry -> carry
+        $this->updateNZ( $iValue = (($iValue >> 1) | $iCarry) );
+        $this->oOutside->writeByte($iAddress, $iValue);
+    }
 
     protected function run() {
         $bRunning = true;
@@ -361,7 +399,7 @@ class MOS6502Processor implements
                 break;
             }
 
-            case self::DEC_ABX: break; {
+            case self::DEC_ABX: {
                 $iAddress = $this->addrAbsoluteXByte();
                 $iValue   = ($this->oOutside->readByte($iAddress) - 1) & 0xFF;
                 $this->updateNZ($iValue);
@@ -398,7 +436,7 @@ class MOS6502Processor implements
                 break;
             }
 
-            case self::INC_ABX: break; {
+            case self::INC_ABX: {
                 $iAddress = $this->addrAbsoluteXByte();
                 $iValue   = ($this->oOutside->readByte($iAddress) + 1) & 0xFF;
                 $this->updateNZ($iValue);
@@ -497,6 +535,59 @@ class MOS6502Processor implements
             case self::EOR_ABY: $this->updateNZ($this->iAccumulator ^= $this->oOutside->readByte($this->addrAbsoluteYByte())); break;
             case self::EOR_IX:  $this->updateNZ($this->iAccumulator ^= $this->oOutside->readByte($this->addrPreIndexZeroPageXByte()));  break;
             case self::EOR_IY:  $this->updateNZ($this->iAccumulator ^= $this->oOutside->readByte($this->addrPostIndexZeroPageYByte())); break;
+
+            // Arithmetuc shift left
+            case self::ASL_A: {
+                $this->iStatus &= ~self::F_CARRY;
+                $this->iStatus |= ($this->iAccumulator & self::F_NEGATIVE) >> 7; // sign -> carry
+                $this->updateNZ($this->iAccumulator = (($this->iAccumulator << 1) & 0xFF));
+                break;
+            }
+
+            case self::ASL_ZP:  $this->aslMemory($this->addrZeroPageByte()); break;
+            case self::ASL_ZPX: $this->aslMemory($this->addrZeroPageXByte()); break;
+            case self::ASL_AB:  $this->aslMemory($this->addrAbsoluteByte()); break;
+            case self::ASL_ABX: $this->aslMemory($this->addrAbsoluteXByte()); break;
+
+            // Logical shift right
+            case self::LSR_A: {
+                $this->iStatus &= ~self::F_CARRY;
+                $this->iStatus |= ($this->iAccumulator & self::F_CARRY);
+                $this->updateNZ($this->iAccumulator >>= 1);
+                break;
+            }
+
+            case self::ROL_A: {
+                $iCarry = ($this->iStatus & self::F_CARRY);
+                $this->iStatus &= ~self::F_CARRY;
+                $this->iStatus |= ($this->iAccumulator & self::F_NEGATIVE) >> 7; // sign -> carry
+                $this->updateNZ( $this->iAccumulator = ((($this->iAccumulator << 1) | $iCarry) & 0xFF) );
+                break;
+            }
+
+            case self::ROL_ZP:  $this->rolMemory($this->addrZeroPageByte()); break;
+            case self::ROL_ZPX: $this->rolMemory($this->addrZeroPageByte()); break;
+            case self::ROL_AB:  $this->rolMemory($this->addrAbsoluteByte()); break;
+            case self::ROL_ABX: $this->rolMemory($this->addrAbsoluteXByte()); break;
+
+            case self::ROR_A: {
+                $iCarry = ($this->iStatus & self::F_CARRY) << 7; // carry -> sign
+                $this->iStatus &= ~self::F_CARRY;
+                $this->iStatus |= ($this->iAccumulator & self::F_CARRY); // carry -> carry
+                $this->updateNZ($this->iAccumulator = (($this->iAccumulator >> 1) | $iCarry));
+                break;
+            }
+
+            case self::ROR_ZP:  $this->rorMemory($this->addrZeroPageByte()); break;
+            case self::ROR_ZPX: $this->rorMemory($this->addrZeroPageByte()); break;
+            case self::ROR_AB:  $this->rorMemory($this->addrAbsoluteByte()); break;
+            case self::ROR_ABX: $this->rorMemory($this->addrAbsoluteXByte()); break;
+
+            case self::LSR_ZP:  $this->lsrMemory($this->addrZeroPageByte()); break;
+            case self::LSR_ZPX: $this->lsrMemory($this->addrZeroPageXByte()); break;
+            case self::LSR_AB:  $this->lsrMemory($this->addrAbsoluteByte()); break;
+            case self::LSR_ABX: $this->lsrMemory($this->addrAbsoluteXByte()); break;
+
 
             // Addition
             // A + M + C

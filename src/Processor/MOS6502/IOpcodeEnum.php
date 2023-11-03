@@ -132,9 +132,9 @@ interface IOpcodeEnum {
 
         // INC - Increment Memory by One
         INC_ZP  = 0xE6, // Zero Page
-        INC_ZPX = 0xF6, // Zero Page,
+        INC_ZPX = 0xF6, // Zero Page,X
         INC_AB  = 0xEE, // Absolute
-        INC_ABX = 0xFE, // Absolute,
+        INC_ABX = 0xFE, // Absolute,X
 
         // INX - Increment Index X by One
         INX     = 0xE8,
