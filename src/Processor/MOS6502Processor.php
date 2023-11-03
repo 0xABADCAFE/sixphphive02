@@ -690,7 +690,36 @@ class MOS6502Processor implements
                 }
                 // Avoid the program counter update, since we releaded it anyway
                 return true;
-                break;
+            }
+
+            case self::JMP_IN: {
+                // Emulate the 6502 indirect jump bug with respect to page boundaries.
+                $iPointerAddress = $this->readWord($this->iProgramCounter + 1);
+                if (0xFF === ($iPointerAddress & 0xFF)) {
+                    $iAddress = $this->oOutside->readByte($iPointerAddress);
+                    $iAddress |= $this->oOutside->readByte($iPointerAddress & 0xFF00) << 8;
+                    $this->iProgramCounter = $this->readWord($iAddress);
+                } else {
+                    $this->iProgramCounter = $this->readWord($iPointerAddress);
+                }
+                return true;
+            }
+
+            case self::JSR_AB: {
+                // Note the 6502 notion of the return address is actually the address of the last byte of
+                // the operation.
+                $iReturnAddress = ($this->iProgramCounter + 2) & self::MEM_MASK;
+                $this->pushByte($iReturnAddress >> 8);
+                $this->pushByte($iReturnAddress & 0xFF);
+                $this->iProgramCounter = $this->readWord($this->iProgramCounter + 1);
+                return true;
+            }
+
+            case self::RTS: {
+                $iReturnAddress  = $this->pullByte();
+                $iReturnAddress |= ($this->pullByte() << 8);
+                $this->iProgramCounter = $iReturnAddress + 1;
+                return true;
             }
 
             default:
