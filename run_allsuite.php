@@ -21,12 +21,11 @@ $oMap
     ->attach(new Device\Memory(0x4000), 0x0000)
     ->attach(new Device\ReadOnlyMemory(file_get_contents('data/AllSuiteA.bin')), 0x4000);
 
+// Set the ROM address in the IRQ vector
+$oMap->writeByte(Processor\MOS6502Processor::VEC_IRQ,     0x00);
+$oMap->writeByte(Processor\MOS6502Processor::VEC_IRQ + 1, 0x40);
 
 
 $o6502 = new Processor\MOS6502ProcessorDebug($oMap, 0);
 //$o6502 = new Processor\MOS6502Processor($oMap);
-$o6502
-    ->setInitialSP(0xFC)
-    ->setInitialSR(0x16)
-    ->setInitialPC(0x4000)
-    ->start();
+$o6502->start();
