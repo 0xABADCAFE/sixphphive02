@@ -328,4 +328,54 @@ class Flags extends MOS6502ProcessorDebug implements ITest {
 
     }
 
+    public function testROLMemory(): void {
+        $iTestAddress = 0x2000;
+
+        $oMockMemory  = $this->createMockMemory([
+            $iTestAddress => 0xAA,
+        ]);
+
+        // Maps input value to output value and expected flags. We start with an emtpty carry
+        // so rotating won't add the low bit initially
+        $aTestCases = [
+            0xAA => [0x54, self::F_CARRY],
+            0x54 => [0xA9, 0],
+            0xA9 => [0x52, self::F_CARRY],
+            0x52 => [0xA5, 0],
+            0xA5 => [0x4A, self::F_CARRY],
+            0x4A => [0x95, 0],
+            0x95 => [0x2A, self::F_CARRY],
+            0x2A => [0x55, 0],
+            0x55 => [0xAA, 0], // Repeats from here
+        ];
+
+        $oProcessor = new MOS6502Processor($oMockMemory);
+        $oProcessor->iStatus = 0;
+
+        foreach ($aTestCases as $iInput => $aExpect) {
+            $oMockMemory->aData[$iTestAddress] = $iInput;
+            $oProcessor->rolMemory($iTestAddress);
+
+            $this->assert(
+                $oMockMemory->aData[$iTestAddress] === $aExpect[0],
+                sprintf(
+                    "Failed asserting shifted value at test address $%04X is %02X, got %02X",
+                    $iTestAddress,
+                    $aExpect[0],
+                    $oMockMemory->aData[$iTestAddress]
+                )
+            );
+
+            $this->assert(
+                ($oProcessor->iStatus & (self::F_ZERO|self::F_CARRY)) === $aExpect[1],
+                sprintf(
+                    "Failed asserting SR is %02X, got %02X",
+                    $aExpect[1],
+                    $oProcessor->iStatus & (self::F_ZERO|self::F_CARRY)
+                )
+            );
+        }
+
+    }
+
 }

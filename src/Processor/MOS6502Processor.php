@@ -157,8 +157,8 @@ class MOS6502Processor implements
         $this->iAccumulator = $iRes;
     }
 
-    protected function cmpByte(int $iValue): void {
-        $iDiff = ($this->iAccumulator & 0xFF) - ($iValue & 0xFF) ;//- (~$this->iStatus & self::F_CARRY);
+    protected function cmpByte(int $iTo, int $iValue): void {
+        $iDiff = ($iTo & 0xFF) - ($iValue & 0xFF) ;//- (~$this->iStatus & self::F_CARRY);
         $iRes = $iDiff & 0xFF;
 
         // Deal with the result
@@ -410,7 +410,7 @@ class MOS6502Processor implements
 
             // Increment
             case self::INX: $this->updateNZ($this->iXIndex = (($this->iXIndex + 1) & 0xFF)); break;
-            case self::INY: $this->updateNZ($this->iXIndex = (($this->iYIndex + 1) & 0xFF)); break;
+            case self::INY: $this->updateNZ($this->iYIndex = (($this->iYIndex + 1) & 0xFF)); break;
 
             case self::INC_ZP: {
                 $iAddress = $this->addrZeroPageByte();
@@ -613,14 +613,41 @@ class MOS6502Processor implements
 
             // Compare
             // A - M
-            case self::CMP_IM:  $this->cmpByte($this->oOutside->readByte($this->iProgramCounter + 1)); break;
-            case self::CMP_ZP:  $this->cmpByte($this->oOutside->readByte($this->addrZeroPageByte()));  break;
-            case self::CMP_ZPX: $this->cmpByte($this->oOutside->readByte($this->addrZeroPageXByte())); break;
-            case self::CMP_AB:  $this->cmpByte($this->oOutside->readByte($this->addrAbsoluteByte()));  break;
-            case self::CMP_ABX: $this->cmpByte($this->oOutside->readByte($this->addrAbsoluteXByte())); break;
-            case self::CMP_ABY: $this->cmpByte($this->oOutside->readByte($this->addrAbsoluteYByte())); break;
-            case self::CMP_IX:  $this->cmpByte($this->oOutside->readByte($this->addrPreIndexZeroPageXByte()));  break;
-            case self::CMP_IY:  $this->cmpByte($this->oOutside->readByte($this->addrPostIndexZeroPageYByte())); break;
+            case self::CMP_IM:  $this->cmpByte($this->iAccumulator, $this->oOutside->readByte($this->iProgramCounter + 1)); break;
+            case self::CMP_ZP:  $this->cmpByte($this->iAccumulator, $this->oOutside->readByte($this->addrZeroPageByte()));  break;
+            case self::CMP_ZPX: $this->cmpByte($this->iAccumulator, $this->oOutside->readByte($this->addrZeroPageXByte())); break;
+            case self::CMP_AB:  $this->cmpByte($this->iAccumulator, $this->oOutside->readByte($this->addrAbsoluteByte()));  break;
+            case self::CMP_ABX: $this->cmpByte($this->iAccumulator, $this->oOutside->readByte($this->addrAbsoluteXByte())); break;
+            case self::CMP_ABY: $this->cmpByte($this->iAccumulator, $this->oOutside->readByte($this->addrAbsoluteYByte())); break;
+            case self::CMP_IX:  $this->cmpByte($this->iAccumulator, $this->oOutside->readByte($this->addrPreIndexZeroPageXByte()));  break;
+            case self::CMP_IY:  $this->cmpByte($this->iAccumulator, $this->oOutside->readByte($this->addrPostIndexZeroPageYByte())); break;
+
+            case self::CPX_IM:  $this->cmpByte($this->iXIndex, $this->oOutside->readByte($this->iProgramCounter + 1)); break;
+            case self::CPX_ZP:  $this->cmpByte($this->iXIndex, $this->oOutside->readByte($this->addrZeroPageByte()));  break;
+            case self::CPX_AB:  $this->cmpByte($this->iXIndex, $this->oOutside->readByte($this->addrAbsoluteByte()));  break;
+
+            case self::CPY_IM:  $this->cmpByte($this->iYIndex, $this->oOutside->readByte($this->iProgramCounter + 1)); break;
+            case self::CPY_ZP:  $this->cmpByte($this->iYIndex, $this->oOutside->readByte($this->addrZeroPageByte()));  break;
+            case self::CPY_AB:  $this->cmpByte($this->iYIndex, $this->oOutside->readByte($this->addrAbsoluteByte()));  break;
+
+            case self::BIT_ZP: {
+                $iMem = $this->oOutside->readByte($this->addrZeroPageByte());
+                $this->iStatus &= ~(self::F_NEGATIVE | self::F_OVERFLOW | self::F_ZERO);
+                $this->iStatus |= ($iMem & (self::F_NEGATIVE|self::F_OVERFLOW)) | (
+                    $iMem & $this->iAccumulator ? 0 : self::F_ZERO
+                );
+                break;
+            }
+            case self::BIT_AB: {
+                $iMem = $this->oOutside->readByte($this->addrZeroPageByte());
+                $this->iStatus &= ~(self::F_NEGATIVE | self::F_OVERFLOW | self::F_ZERO);
+                $this->iStatus |= ($iMem & (self::F_NEGATIVE|self::F_OVERFLOW)) | (
+                    $iMem & $this->iAccumulator ? 0 : self::F_ZERO
+                );
+                break;
+
+            }
+
 
             // Conditional
             case self::BCC: {
@@ -682,12 +709,16 @@ class MOS6502Processor implements
             // unconditional
             case self::JMP_AB: {
                 //$iCycles += self::OP_CYCLES[$iOpcode];
-                $this->iProgramCounter = $this->readWord($this->iProgramCounter + 1);
 
-                if ($this->iProgramCounter === 0x45C0) {
-                    //echo "\nValue at 0x0210: ", $this->oOutside->readByte(0x0210), "\n";
+                $iNewProgramCounter = $this->readWord($this->iProgramCounter + 1);
+
+                if ($iNewProgramCounter === $this->iProgramCounter) {
+                    // Hard Infinite Loop
                     return false;
                 }
+
+                 $this->iProgramCounter = $iNewProgramCounter;
+
                 // Avoid the program counter update, since we releaded it anyway
                 return true;
             }
@@ -719,6 +750,36 @@ class MOS6502Processor implements
                 $iReturnAddress  = $this->pullByte();
                 $iReturnAddress |= ($this->pullByte() << 8);
                 $this->iProgramCounter = $iReturnAddress + 1;
+                return true;
+            }
+
+            case self::RTI: {
+                // Pull SR but ignore bit 5
+                $iStatus = $this->pullByte() & ~self::F_UNUSED; // clear unused only
+                $this->iStatus &= self::F_UNUSED; // clear all but unused flag
+                $this->iStatus |= $iStatus;
+
+                // Pull PC
+                $iReturnAddress  = $this->pullByte();
+                $iReturnAddress |= ($this->pullByte() << 8);
+                $this->iProgramCounter = $iReturnAddress;// + 1;
+                return true;
+            }
+
+            case self::BRK: {
+                // Push PC+2 as return address
+                $iReturnAddress = ($this->iProgramCounter + 2) & self::MEM_MASK;
+                $this->pushByte($iReturnAddress >> 8);
+                $this->pushByte($iReturnAddress & 0xFF);
+
+                // Push SR
+                $this->pushByte($this->iStatus);
+
+                // Reload PC from IRQ vector
+                $this->iProgramCounter = $this->readWord(self::VEC_IRQ);
+
+                // Set interrupted status. Is this the correct location?
+                $this->iStatus |= self::F_INTERRUPT;
                 return true;
             }
 

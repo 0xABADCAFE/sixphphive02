@@ -56,6 +56,7 @@ Test\Harness::runNamedTests(
         'testSubByteNoInitialCarry',
         'testSubByteWithInitialCarry',
         'testLSRMemory',
+        'testROLMemory',
 
     ]
 );
