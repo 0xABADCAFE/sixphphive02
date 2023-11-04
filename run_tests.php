@@ -55,5 +55,7 @@ Test\Harness::runNamedTests(
         'testAddByteWithInitialCarry',
         'testSubByteNoInitialCarry',
         'testSubByteWithInitialCarry',
+        'testLSRMemory',
+
     ]
 );

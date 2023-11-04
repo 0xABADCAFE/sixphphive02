@@ -278,4 +278,54 @@ class Flags extends MOS6502ProcessorDebug implements ITest {
             }
         }
     }
+
+    public function testLSRMemory(): void {
+        $iTestAddress = 0x2000;
+
+        $oMockMemory  = $this->createMockMemory([
+            $iTestAddress => 0xAA,
+        ]);
+
+        // Maps input value to output value and expected flags
+        $aTestCases = [
+            0xAA => [0x55, 0],
+            0x55 => [0x2A, self::F_CARRY],
+            0x2A => [0x15, 0],
+            0x15 => [0x0A, self::F_CARRY],
+            0x0A => [0x05, 0],
+            0x05 => [0x02, self::F_CARRY],
+            0x02 => [0x01, 0],
+            0x01 => [0x00, self::F_ZERO|self::F_CARRY],
+            0x00 => [0x00, self::F_ZERO]
+        ];
+
+        $oProcessor = new MOS6502Processor($oMockMemory);
+        $oProcessor->iStatus = 0;
+
+        foreach ($aTestCases as $iInput => $aExpect) {
+            $oMockMemory->aData[$iTestAddress] = $iInput;
+            $oProcessor->lsrMemory($iTestAddress);
+
+            $this->assert(
+                $oMockMemory->aData[$iTestAddress] === $aExpect[0],
+                sprintf(
+                    "Failed asserting shifted value at test address $%04X is %02X, got %02X",
+                    $iTestAddress,
+                    $aExpect[0],
+                    $oMockMemory->aData[$iTestAddress]
+                )
+            );
+
+            $this->assert(
+                ($oProcessor->iStatus & (self::F_ZERO|self::F_CARRY)) === $aExpect[1],
+                sprintf(
+                    "Failed asserting SR is %02X, got %02X",
+                    $aExpect[1],
+                    $oProcessor->iStatus & (self::F_ZERO|self::F_CARRY)
+                )
+            );
+        }
+
+    }
+
 }
