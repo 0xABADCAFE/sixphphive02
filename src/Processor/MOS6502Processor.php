@@ -116,7 +116,7 @@ class MOS6502Processor implements
         $this->iXIndex         = 0;
         $this->iYIndex         = 0;
         $this->iStackPointer   = self::STACK_TOP - self::STACK_BASE; // offset in the page at STACK_BASE
-        $this->iProgramCounter = 0;
+        $this->iProgramCounter = $this->readWord(self::VEC_RES);     // load from reset vector
         $this->iStatus         = 0;
     }
 

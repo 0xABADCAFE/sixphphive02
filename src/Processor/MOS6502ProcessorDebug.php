@@ -153,7 +153,7 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
                 $this->decodeInstruction($this->iProgramCounter)
             );
 
-            usleep($this->iDelay);
+            //usleep($this->iDelay);
 
             $bRunning = $this->executeOpcode($iOpcode);
             $iCycles += self::OP_CYCLES[$iOpcode];

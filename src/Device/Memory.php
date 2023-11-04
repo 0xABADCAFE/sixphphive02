@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace ABadCafe\SixPHPhive02\Device;
 
+use function \strlen, \sprintf, \chunk_split;
+
 /**
  * Memory
  *
@@ -42,6 +44,7 @@ class Memory implements IPageMappable {
             $iByteLength = ($iByteLength & 0xFF00) + self::PAGE_SIZE;
         }
         $this->iLength = $iByteLength >> 8;
+        $this->setBasePage(0);
         $this->hardReset();
         $this->sName = sprintf("%s [unit %d] (%d bytes)", $this->getType(), self::$iUnit++, $iByteLength);
     }
