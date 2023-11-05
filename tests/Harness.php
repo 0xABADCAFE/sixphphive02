@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace ABadCafe\SixPHPhive02\Test;
 use ABadCafe\SixPHPhive02\Device\IByteAccessible;
+use ABadCafe\SixPHPhive02\Processor\MOS6502\IConstants;
+
 
 use \Throwable;
 use \LogicException;
@@ -32,6 +34,10 @@ trait TTest {
             public array $aData;
             public function __construct(array $aData) {
                 $this->aData = $aData;
+                if (!isset($this->aData[IConstants::VEC_RES])) {
+                    $this->aData[IConstants::VEC_RES] = 0;
+                    $this->aData[IConstants::VEC_RES + 1] = 0;
+                }
             }
 
             public function getName(): string {
@@ -100,7 +106,7 @@ class Harness {
                 printf("Failed: %s\n", $oError->getMessage());
                 ++self::$iTestsFailed;
             } catch (Throwable $oError) {
-                printf("Error: %s\n", $oError->getMessage());
+                printf("Error: %s\n%s\n", $oError->getMessage(), $oError->getTraceAsString());
                 ++self::$iTestsErrored;
             }
         }
