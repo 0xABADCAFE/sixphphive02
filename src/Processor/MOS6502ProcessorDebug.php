@@ -42,6 +42,8 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
         $iSStatus            // 8-bit,
     ;
 
+    protected array $aBreakpoints = [];
+
     public function __construct(IByteAccessible $oOutside, int $iDelay = 25000) {
         $this->bColour = stream_isatty(STDOUT);
         if ($oOutside instanceof BusSnooper) {
@@ -52,8 +54,6 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
             $this->oOutsideDirect = $oOutside;
         }
         $this->iDelay = $iDelay;
-
-
     }
 
 
@@ -101,6 +101,11 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
         //$this->dumpPage(self::STACK_BASE);
     }
 
+    public function addBreakPoint(int $iAddress, int $iAfter = 0): self {
+        $this->aBreakpoints[$iAddress] = $iAfter;
+        return $this;
+    }
+
     public function disassemble(int $iFrom, int $iBytes, bool $bAddress=true): void {
         $iFrom &= 0xFFFF;
         while ($iFrom < 0xFFFF && $iBytes > 0) {
@@ -143,7 +148,22 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
         $iCycles  = 0;
         $iOps     = 0;
         //$fMark    = microtime(true);
+
         while ($bRunning) {
+            if (isset($this->aBreakpoints[$this->iProgramCounter])) {
+                if (0 == $this->aBreakpoints[$this->iProgramCounter]) {
+                    printf(
+                        "\nBREAKPOINT PC=$%04X\nStack:\n%s\nZero Page:\n%s\n",
+                        $this->iProgramCounter,
+                        $this->oOutsideDirect->getPageDump(self::STACK_BASE),
+                        $this->oOutsideDirect->getPageDump(0)
+                    );
+                    break;
+                } else {
+                    --$this->aBreakpoints[$this->iProgramCounter];
+                }
+            }
+
             $this->oOutside->resetSnoops();
             $iOpcode    = $this->oOutside->readByte($this->iProgramCounter);
             $iExpectNext = $this->iProgramCounter + self::OP_SIZE[$iOpcode];
@@ -176,8 +196,6 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
                 );
             }
         }
-
-        echo $this->oOutsideDirect->getPageDump(0x4000), "\n";
 
         //$fTime = microtime(true) - $fMark;
 

@@ -22,12 +22,10 @@ class NonVolatileMemory extends Memory {
 
     public function __construct(string $sBinary) {
         $iByteLength = strlen($sBinary);
-
-        if ($iByteLength && 0xFF) {
-            $iByteLength = ($iByteLength + 256) & 0xFF00;
+        if ($iByteLength & 0xFF) {
+            $iByteLength = (($iByteLength + 256) & 0xFF00);
             $sBinary = str_pad($sBinary, $iByteLength);
         }
-
         parent::__construct($iByteLength);
         $this->sBinary = $sBinary;
     }

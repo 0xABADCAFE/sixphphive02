@@ -358,7 +358,8 @@ class MOS6502Processor implements
             case self::TAY: $this->updateNZ($this->iYIndex = $this->iAccumulator & 0xFF);  break;
             case self::TSX: $this->updateNZ($this->iXIndex = $this->iStackPointer & 0xFF); break;
             case self::TXA: $this->updateNZ($this->iAccumulator  = $this->iXIndex & 0xFF); break;
-            case self::TXS: $this->updateNZ($this->iStackPointer = $this->iXIndex & 0xFF); break;
+            // klausd tests: TXS does not update NZ
+            case self::TXS: $this->iStackPointer = $this->iXIndex & 0xFF; break;
             case self::TYA: $this->updateNZ($this->iAccumulator  = $this->iYIndex & 0xFF); break;
 
             // Stack
@@ -639,7 +640,7 @@ class MOS6502Processor implements
                 break;
             }
             case self::BIT_AB: {
-                $iMem = $this->oOutside->readByte($this->addrZeroPageByte());
+                $iMem = $this->oOutside->readByte($this->addrAbsoluteByte());
                 $this->iStatus &= ~(self::F_NEGATIVE | self::F_OVERFLOW | self::F_ZERO);
                 $this->iStatus |= ($iMem & (self::F_NEGATIVE|self::F_OVERFLOW)) | (
                     $iMem & $this->iAccumulator ? 0 : self::F_ZERO
@@ -755,8 +756,8 @@ class MOS6502Processor implements
 
             case self::RTI: {
                 // Pull SR but ignore bit 5
-                $iStatus = $this->pullByte() & ~self::F_UNUSED; // clear unused only
-                $this->iStatus &= self::F_UNUSED; // clear all but unused flag
+                $iStatus = $this->pullByte() & ~(self::F_UNUSED|self::F_BREAK); // clear unused only
+                $this->iStatus &= (self::F_UNUSED|self::F_BREAK); // clear all but unused flag
                 $this->iStatus |= $iStatus;
 
                 // Pull PC
@@ -768,12 +769,13 @@ class MOS6502Processor implements
 
             case self::BRK: {
                 // Push PC+2 as return address
+                $iValAddress   = $this->iProgramCounter + 1;
                 $iReturnAddress = ($this->iProgramCounter + 2) & self::MEM_MASK;
                 $this->pushByte($iReturnAddress >> 8);
                 $this->pushByte($iReturnAddress & 0xFF);
 
                 // Push SR
-                $this->pushByte($this->iStatus);
+                $this->pushByte($this->iStatus|self::F_BREAK|self::F_UNUSED);
 
                 // Reload PC from IRQ vector
                 $this->iProgramCounter = $this->readWord(self::VEC_IRQ);
