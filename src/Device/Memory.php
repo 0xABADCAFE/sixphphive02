@@ -45,6 +45,7 @@ class Memory implements IPageMappable {
         }
         $this->iLength = $iByteLength >> 8;
         $this->setBasePage(0);
+
         $this->hardReset();
         $this->sName = sprintf("%s [unit %d] (%d bytes)", $this->getType(), self::$iUnit++, $iByteLength);
     }
@@ -76,6 +77,7 @@ class Memory implements IPageMappable {
     public function setBasePage(int $iPage): self {
         $this->iBaseAddress = $iPage << 8;
         $this->iLastAddress = $this->iBaseAddress + ($this->iLength << 8) - 1;
+
         return $this;
     }
 
