@@ -24,6 +24,7 @@ use ABadCafe\SixPHPhive02\IDevice;
  */
 interface IByteAccessible extends IDevice {
     const MAX_ADDRESS = 0xFFFF;
+    const ADDR_MASK   = 0xFFFF;
 
     /**
      * Reads a byte from the given address. The exact behaviour depends on the
