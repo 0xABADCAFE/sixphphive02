@@ -18,12 +18,13 @@ use ABadCafe\SixPHPhive02\Device\IByteConv;
 use ABadCafe\SixPHPhive02\I8BitProcessor;
 use LogicException;
 
-use \ord, \chr;
 /**
  * MOS6502ProcessorQuick
  *
  * Faster implementation. Foregoes the ability to use an external address space. Memory is internalised directly
  * removing a significant indirection. A number of simpler addressing modes (absolute, zeropage) are inlined.
+ *
+ * The end result is rather a lot less readable.
  */
 class MOS6502ProcessorQuick implements
     I8BitProcessor,
@@ -56,7 +57,7 @@ class MOS6502ProcessorQuick implements
      * @see IDevice
      */
     public function getName(): string {
-        return 'MOS 6502 (simple)';
+        return 'MOS 6502 (quicker)';
     }
 
     /**
@@ -356,14 +357,16 @@ class MOS6502ProcessorQuick implements
         $iCycles  = 0;
         $fMark    = microtime(true);
         while ($bRunning) {
+            $iLastPC = $this->iProgramCounter;
             $iOpcode = self::AORD[$this->sMemory[$this->iProgramCounter & self::MEM_MASK]];
 
-            //printf("%04X: %s\n", $this->iProgramCounter, $this->decodeInstruction($this->iProgramCounter));
-
-            $bRunning = $this->executeOpcode($iOpcode) && $iCycles < 10000000;
+            // Exit on infinite loop detection
+            $bRunning = $this->executeOpcode($iOpcode) && $iLastPC != $this->iProgramCounter;
             $iCycles += self::OP_CYCLES[$iOpcode];
         }
         $fTime = microtime(true) - $fMark;
+
+        printf("%4X: %s\n", $this->iProgramCounter, $this->decodeInstruction($this->iProgramCounter));
 
         printf("Completed %d cycles in %.6f seconds, %.2f op/s\n", $iCycles, $fTime, $iCycles/$fTime);
     }

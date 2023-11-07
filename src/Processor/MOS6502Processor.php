@@ -314,7 +314,7 @@ class MOS6502Processor implements
     }
 
     protected function rolMemory(int $iAddress): void {
-        $iValue   = $this->oOutside->readByte($iAddress);
+        $iValue = $this->oOutside->readByte($iAddress);
         $iCarry = ($this->iStatus & self::F_CARRY);
         $this->iStatus &= ~self::F_CARRY;
         $this->iStatus |= ($iValue & self::F_NEGATIVE) >> 7; // sign -> carry
@@ -323,7 +323,7 @@ class MOS6502Processor implements
     }
 
     protected function rorMemory(int $iAddress): void {
-        $iValue   = $this->oOutside->readByte($iAddress);
+        $iValue = $this->oOutside->readByte($iAddress);
         $iCarry = ($this->iStatus & self::F_CARRY) << 7; // carry -> sign
         $this->iStatus &= ~self::F_CARRY;
         $this->iStatus |= ($iValue & self::F_CARRY); // carry -> carry
@@ -336,8 +336,11 @@ class MOS6502Processor implements
         $iCycles  = 0;
         $fMark    = microtime(true);
         while ($bRunning) {
+            $iLastPC = $this->iProgramCounter;
             $iOpcode = $this->oOutside->readByte($this->iProgramCounter);
-            $bRunning = $this->executeOpcode($iOpcode) && $iCycles < 10000000;
+
+            // exit on infinite loop detection
+            $bRunning = $this->executeOpcode($iOpcode) && $iLastPC != $this->iProgramCounter;
             $iCycles += self::OP_CYCLES[$iOpcode];
         }
         $fTime = microtime(true) - $fMark;
