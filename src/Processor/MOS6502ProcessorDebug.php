@@ -150,6 +150,7 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
         //$fMark    = microtime(true);
 
         while ($bRunning) {
+            $iLastPC = $this->iProgramCounter;
             if (isset($this->aBreakpoints[$this->iProgramCounter])) {
                 if (0 == $this->aBreakpoints[$this->iProgramCounter]) {
                     printf(
@@ -175,7 +176,7 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
 
             //usleep($this->iDelay);
 
-            $bRunning = $this->executeOpcode($iOpcode);
+            $bRunning = $this->executeOpcode($iOpcode) && $iLastPC != $this->iProgramCounter;
             $iCycles += self::OP_CYCLES[$iOpcode];
             ++$iOps;
 

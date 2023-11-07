@@ -126,7 +126,10 @@ class MOS6502Processor implements
     }
 
     protected function addByteWithCarry(int $iValue): void {
-        $iSum = ($this->iStatus & self::F_CARRY) + ($iValue & 0xFF) + ($this->iAccumulator & 0xFF);
+        //$iSum = ($this->iStatus & self::F_CARRY) + ($iValue & 0xFF) + ($this->iAccumulator & 0xFF);
+
+        $iSum = ($this->iStatus & self::F_CARRY) + $iValue + $this->iAccumulator;
+
         $iRes = $iSum & 0xFF;
 
         // Deal with the result
@@ -142,7 +145,9 @@ class MOS6502Processor implements
     }
 
     protected function subByteWithCarry(int $iValue): void {
-        $iDiff = ($this->iAccumulator & 0xFF) - ($iValue & 0xFF) - (~$this->iStatus & self::F_CARRY);
+        //$iDiff = ($this->iAccumulator & 0xFF) - ($iValue & 0xFF) - (~$this->iStatus & self::F_CARRY);
+        $iDiff = $this->iAccumulator - $iValue - (~$this->iStatus & self::F_CARRY);
+
         $iRes = $iDiff & 0xFF;
 
         // Deal with the result
@@ -158,7 +163,9 @@ class MOS6502Processor implements
     }
 
     protected function cmpByte(int $iTo, int $iValue): void {
-        $iDiff = ($iTo & 0xFF) - ($iValue & 0xFF) ;//- (~$this->iStatus & self::F_CARRY);
+        //$iDiff = ($iTo & 0xFF) - ($iValue & 0xFF) ;//- (~$this->iStatus & self::F_CARRY);
+        $iDiff = $iTo - $iValue ;//- (~$this->iStatus & self::F_CARRY);
+
         $iRes = $iDiff & 0xFF;
 
         // Deal with the result
@@ -307,7 +314,7 @@ class MOS6502Processor implements
     }
 
     protected function rolMemory(int $iAddress): void {
-        $iValue   = $this->oOutside->readByte($iAddress);
+        $iValue = $this->oOutside->readByte($iAddress);
         $iCarry = ($this->iStatus & self::F_CARRY);
         $this->iStatus &= ~self::F_CARRY;
         $this->iStatus |= ($iValue & self::F_NEGATIVE) >> 7; // sign -> carry
@@ -316,7 +323,7 @@ class MOS6502Processor implements
     }
 
     protected function rorMemory(int $iAddress): void {
-        $iValue   = $this->oOutside->readByte($iAddress);
+        $iValue = $this->oOutside->readByte($iAddress);
         $iCarry = ($this->iStatus & self::F_CARRY) << 7; // carry -> sign
         $this->iStatus &= ~self::F_CARRY;
         $this->iStatus |= ($iValue & self::F_CARRY); // carry -> carry
@@ -327,17 +334,18 @@ class MOS6502Processor implements
     protected function run() {
         $bRunning = true;
         $iCycles  = 0;
-        $iOps     = 0;
-        //$fMark    = microtime(true);
+        $fMark    = microtime(true);
         while ($bRunning) {
+            $iLastPC = $this->iProgramCounter;
             $iOpcode = $this->oOutside->readByte($this->iProgramCounter);
-            $bRunning = $this->executeOpcode($iOpcode);
-            $iCycles += self::OP_CYCLES[$iOpcode];
-            ++$iOps;
-        }
-        //$fTime = microtime(true) - $fMark;
 
-        //printf("Completed %d ops in %.6f seconds, %.2f op/s\n", $iOps, $fTime, $iOps/$fTime);
+            // exit on infinite loop detection
+            $bRunning = $this->executeOpcode($iOpcode) && $iLastPC != $this->iProgramCounter;
+            $iCycles += self::OP_CYCLES[$iOpcode];
+        }
+        $fTime = microtime(true) - $fMark;
+
+        printf("Completed %d cycles in %.6f seconds, %.2f op/s\n", $iCycles, $fTime, $iCycles/$fTime);
     }
 
     public function executeOpcode(int $iOpcode): bool {
@@ -354,13 +362,13 @@ class MOS6502Processor implements
             case self::SEI: $this->iStatus |= self::F_INTERRUPT;  break;
 
             // Register transfer
-            case self::TAX: $this->updateNZ($this->iXIndex = $this->iAccumulator & 0xFF);  break;
-            case self::TAY: $this->updateNZ($this->iYIndex = $this->iAccumulator & 0xFF);  break;
-            case self::TSX: $this->updateNZ($this->iXIndex = $this->iStackPointer & 0xFF); break;
-            case self::TXA: $this->updateNZ($this->iAccumulator  = $this->iXIndex & 0xFF); break;
+            case self::TAX: $this->updateNZ($this->iXIndex = $this->iAccumulator /*& 0xFF*/);  break;
+            case self::TAY: $this->updateNZ($this->iYIndex = $this->iAccumulator /*& 0xFF*/);  break;
+            case self::TSX: $this->updateNZ($this->iXIndex = $this->iStackPointer /*& 0xFF*/); break;
+            case self::TXA: $this->updateNZ($this->iAccumulator  = $this->iXIndex /*& 0xFF*/); break;
             // klausd tests: TXS does not update NZ
-            case self::TXS: $this->iStackPointer = $this->iXIndex & 0xFF; break;
-            case self::TYA: $this->updateNZ($this->iAccumulator  = $this->iYIndex & 0xFF); break;
+            case self::TXS: $this->iStackPointer = $this->iXIndex /*& 0xFF*/; break;
+            case self::TYA: $this->updateNZ($this->iAccumulator  = $this->iYIndex /*& 0xFF*/); break;
 
             // Stack
             case self::PHA: $this->pushByte($this->iAccumulator); break;

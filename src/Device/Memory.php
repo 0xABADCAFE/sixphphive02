@@ -22,7 +22,7 @@ use function \strlen, \sprintf, \chunk_split;
  * as a basic string, since these are indexable in PHP. An array of ints is another plausible implementation
  * but needs around 48x as much memory (the typical size of a PHP7+ zval on 64-bit).
  */
-class Memory implements IPageMappable {
+class Memory implements IPageMappable, IByteConv {
 
     protected int    $iBaseAddress = 0;
     protected int    $iLastAddress = 0;
@@ -60,14 +60,14 @@ class Memory implements IPageMappable {
     }
 
     public function readByte(int $iAddress): int {
-        $iIndex = ($iAddress - $this->iBaseAddress) & 0xFFFF;
+        $iIndex = ($iAddress - $this->iBaseAddress) & self::ADDR_MASK;
         //printf("%s[%d] hit for access $%04X\n", $this->getName(), $iIndex, $iAddress);
-        return ord($this->sBinary[$iIndex]);
+        return self::AORD[$this->sBinary[$iIndex]];
     }
 
     public function writeByte(int $iAddress, int $iValue): void {
-        $iIndex = ($iAddress - $this->iBaseAddress) & 0xFFFF;
-        $this->sBinary[$iIndex] = chr($iValue & 0xFF);
+        $iIndex = ($iAddress - $this->iBaseAddress) & self::ADDR_MASK;
+        $this->sBinary[$iIndex] = self::ACHR[$iValue & 0xFF];
     }
 
     public function getLength(): int {
