@@ -30,8 +30,17 @@ interface IConstants {
         F_BREAK     = 16,
         F_UNUSED    = 32,
         F_OVERFLOW  = 64,
-        F_NEGATIVE  = 128
+        F_NEGATIVE  = 128,
+
+        // Masks
+        F_CLR_NZCV = ~(self::F_NEGATIVE | self::F_ZERO | self::F_CARRY | self::F_OVERFLOW),
+        F_CLR_NZC  = ~(self::F_NEGATIVE | self::F_ZERO | self::F_CARRY),
+        F_CLR_NZV  = ~(self::F_NEGATIVE | self::F_ZERO | self::F_OVERFLOW),
+        F_CLR_NZ   = ~(self::F_NEGATIVE | self::F_ZERO)
     ;
+
+
+
 
     // Vectors
     public const
