@@ -11,18 +11,18 @@
 
 declare(strict_types=1);
 
-namespace ABadCafe\SixPHPhive02\Processor;
+namespace ABadCafe\SixPHPhive02\Processor\MOS6502;
 
 use ABadCafe\SixPHPhive02\Device\IByteAccessible;
 use ABadCafe\SixPHPhive02\Device\BusSnooper;
 use LogicException;
 
 /**
- * MOS6502Processor
+ * Debug
  *
- * Basic implementation.
+ * Diagnostic
  */
-class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsructionDisassembly {
+class Diagnostic extends Standard implements IInsructionDisassembly {
 
     protected const REG_CHANGED_TPL = "\x1b[1m\x1b[48:5:%dm%02X\x1b[m";
 

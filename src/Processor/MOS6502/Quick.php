@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace ABadCafe\SixPHPhive02\Processor;
+namespace ABadCafe\SixPHPhive02\Processor\MOS6502;
 
 use ABadCafe\SixPHPhive02\Device\IByteAccessible;
 use ABadCafe\SixPHPhive02\Device\IByteConv;
@@ -26,7 +26,7 @@ use LogicException;
  *
  * The end result is rather a lot less readable.
  */
-class MOS6502ProcessorQuick extends BaseMOS6502Processor implements IByteConv {
+class Quick extends Base implements IByteConv {
 
     protected string $sMemory;
 
@@ -216,9 +216,9 @@ class MOS6502ProcessorQuick extends BaseMOS6502Processor implements IByteConv {
     protected function decodeInstruction(int $iFrom): string {
         $iFrom &= self::MEM_MASK;
         $iOpcode = self::AORD[$this->sMemory[$iFrom]];
-        if (isset(MOS6502\IInsructionDisassembly::OP_DISASM[$iOpcode])) {
+        if (isset(IInsructionDisassembly::OP_DISASM[$iOpcode])) {
             return sprintf(
-                MOS6502\IInsructionDisassembly::OP_DISASM[$iOpcode],
+                IInsructionDisassembly::OP_DISASM[$iOpcode],
                 self::AORD[$this->sMemory[($iFrom + 1) & self::MEM_MASK]],
                 self::AORD[$this->sMemory[($iFrom + 2) & self::MEM_MASK]]
             );

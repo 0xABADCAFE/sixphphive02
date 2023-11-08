@@ -11,22 +11,22 @@
 
 declare(strict_types=1);
 
-namespace ABadCafe\SixPHPhive02\Processor;
+namespace ABadCafe\SixPHPhive02\Processor\MOS6502;
 
 use ABadCafe\SixPHPhive02\I8BitProcessor;
 use LogicException;
 
 /**
- * BaseMOS6502Processor
+ * Base
  *
  * Common implementation
  */
-abstract class BaseMOS6502Processor implements
+abstract class Base implements
     I8BitProcessor,
-    MOS6502\IConstants,
-    MOS6502\IOpcodeEnum,
-    MOS6502\IInstructionSize,
-    MOS6502\IInstructionCycles
+    IConstants,
+    IOpcodeEnum,
+    IInstructionSize,
+    IInstructionCycles
 {
     // Registers
     protected int
