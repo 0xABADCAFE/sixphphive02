@@ -11,18 +11,18 @@
 
 declare(strict_types=1);
 
-namespace ABadCafe\SixPHPhive02\Processor;
+namespace ABadCafe\SixPHPhive02\Processor\MOS6502;
 
 use ABadCafe\SixPHPhive02\Device\IByteAccessible;
 use ABadCafe\SixPHPhive02\I8BitProcessor;
 use LogicException;
 
 /**
- * MOS6502Processor
+ * Standard
  *
  * Basic implementation.
  */
-class MOS6502Processor extends BaseMOS6502Processor {
+class Standard extends Base {
 
     protected IByteAccessible $oOutside;
 
@@ -36,7 +36,7 @@ class MOS6502Processor extends BaseMOS6502Processor {
      * @see IDevice
      */
     public function getName(): string {
-        return 'MOS 6502 (simple)';
+        return 'MOS 6502 (standard)';
     }
 
     /**

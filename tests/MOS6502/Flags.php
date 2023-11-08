@@ -15,8 +15,8 @@ namespace ABadCafe\SixPHPhive02\Test\MOS6502;
 
 use ABadCafe\SixPHPhive02\Test\ITest;
 use ABadCafe\SixPHPhive02\Test\TTest;
-use ABadCafe\SixPHPhive02\Processor\MOS6502Processor;
-use ABadCafe\SixPHPhive02\Processor\MOS6502ProcessorDebug;
+use ABadCafe\SixPHPhive02\Processor\MOS6502\Standard as MOS6502Processor;
+use ABadCafe\SixPHPhive02\Processor\MOS6502\Diagnostic as MOS6502ProcessorDebug;
 
 /**
  * Tests the operations affecting status flags for the MOS6502Processor.

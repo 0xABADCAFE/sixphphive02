@@ -16,21 +16,8 @@ namespace ABadCafe\SixPHPhive02;
 require_once 'src/bootstrap.php';
 
 
-$o6502 = new Processor\MOS6502ProcessorQuick();
-$o6502->setMemory(file_get_contents('data/6502_functional_test.bin'), 0);
-$o6502->setInitialPC(0x400);
-/*
-   // Success breakpoints, infinite loops based on jump to self.
-	$0625:	JMP $0625
-	$0628:	JMP $0628
-	$062B:	JMP $062B
-	$062E:	JMP $062E
-	$0631:	JMP $0631
-*/
-//     ->addBreakpoint(0x0625, 1)
-//     ->addBreakpoint(0x0628, 1)
-//     ->addBreakpoint(0x062B, 1)
-//     ->addBreakpoint(0x062E, 1)
-//     ->addBreakpoint(0x0631, 1);
-
-$o6502->start();
+$o6502 = new Processor\MOS6502\Quick();
+$o6502
+    ->setMemory(file_get_contents('data/roms/diagnostic/6502_functional_test.bin'), 0)
+    ->setInitialPC(0x400)
+    ->start();

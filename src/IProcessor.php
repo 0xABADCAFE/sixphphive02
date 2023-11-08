@@ -32,4 +32,6 @@ interface I8BitProcessor extends IDevice {
      * Attach to the outside world.
      */
     public function setAddressSpace(Device\IByteAccessible $oOutside): self;
+
+    public function getPC(): int;
 }

@@ -15,7 +15,11 @@ namespace ABadCafe\SixPHPhive02;
 
 require_once 'src/bootstrap.php';
 
-$o6502 = new Processor\MOS6502\Quick();
-$o6502->setMemory(file_get_contents('data/roms/diagnostic/AllSuiteA.bin'), 0x4000);
-$o6502->setInitialPC(0x4000);
-$o6502->start();
+$oMap = new Device\AddressMap();
+$oMap
+    ->attach(new Device\Memory(0xE000), 0x0000)
+    ->attach(new Device\ReadOnlyMemory(file_get_contents('data/roms/diagnostic/TTL6502.BIN')), 0xE000);
+$o6502 = new Processor\MOS6502\Diagnostic($oMap, 0);
+$o6502
+    ->setInitialPC(0xE000)
+    ->start();

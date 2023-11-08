@@ -11,18 +11,18 @@
 
 declare(strict_types=1);
 
-namespace ABadCafe\SixPHPhive02\Processor;
+namespace ABadCafe\SixPHPhive02\Processor\MOS6502;
 
 use ABadCafe\SixPHPhive02\Device\IByteAccessible;
 use ABadCafe\SixPHPhive02\Device\BusSnooper;
 use LogicException;
 
 /**
- * MOS6502Processor
+ * Debug
  *
- * Basic implementation.
+ * Diagnostic
  */
-class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsructionDisassembly {
+class Diagnostic extends Standard implements IInsructionDisassembly {
 
     protected const REG_CHANGED_TPL = "\x1b[1m\x1b[48:5:%dm%02X\x1b[m";
 
@@ -133,6 +133,12 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
     protected function decodeInstruction(int $iFrom): string {
         $iFrom &= self::MEM_MASK;
         $iOpcode = $this->oOutsideDirect->readByte($iFrom);
+        if (isset(self::OP_DISASM_PCR[$iOpcode])) {
+            return sprintf(
+                self::OP_DISASM_PCR[$iOpcode],
+                $iFrom + self::OP_SIZE[$iOpcode] + $this->oOutsideDirect->readByte(($iFrom + 1) & self::MEM_MASK)
+            );
+        }
         if (isset(self::OP_DISASM[$iOpcode])) {
             return sprintf(
                 self::OP_DISASM[$iOpcode],
@@ -174,7 +180,7 @@ class MOS6502ProcessorDebug extends MOS6502Processor implements MOS6502\IInsruct
                 $this->decodeInstruction($this->iProgramCounter)
             );
 
-            //usleep($this->iDelay);
+            usleep($this->iDelay);
 
             $bRunning = $this->executeOpcode($iOpcode) && $iLastPC != $this->iProgramCounter;
             $iCycles += self::OP_CYCLES[$iOpcode];

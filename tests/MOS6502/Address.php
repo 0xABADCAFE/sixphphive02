@@ -15,7 +15,7 @@ namespace ABadCafe\SixPHPhive02\Test\MOS6502;
 
 use ABadCafe\SixPHPhive02\Test\ITest;
 use ABadCafe\SixPHPhive02\Test\TTest;
-use ABadCafe\SixPHPhive02\Processor\MOS6502Processor;
+use ABadCafe\SixPHPhive02\Processor\MOS6502\Standard as MOS6502Processor;
 
 
 /**

@@ -216,4 +216,15 @@ interface IInsructionDisassembly extends IOpcodeEnum {
         self::TYA     => "TYA",
     ];
 
+    const OP_DISASM_PCR = [
+        self::BCC     => "BCC $%04X",
+        self::BCS     => "BCS $%04X",
+        self::BEQ     => "BEQ $%04X",
+        self::BMI     => "BMI $%04X",
+        self::BNE     => "BNE $%04X",
+        self::BPL     => "BPL $%04X",
+        self::BRK     => "BRK $%04X",
+        self::BVC     => "BVC $%04X",
+        self::BVS     => "BVS $%04X",
+    ];
 }
