@@ -56,9 +56,9 @@ class BusSnooper implements IByteAccessible {
     public function readByte(int $iAddress): int {
         $iRead = $this->oTarget->readByte($iAddress);
         $this->sAccessed .= sprintf(" [R: \$%04X => $%02X]", $iAddress, $iRead);
-        if (isset($this->aReadMonitors[$iRead])) {
-            $cCallable = $this->aReadMonitors[$iRead];
-            $cCallable($iAddress, $iByte);
+        if (isset($this->aReadMonitors[$iAddress])) {
+            $cCallable = $this->aReadMonitors[$iAddress];
+            $cCallable($iAddress, $iRead);
         }
         return $iRead;
     }
