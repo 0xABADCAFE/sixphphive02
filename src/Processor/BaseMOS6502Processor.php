@@ -109,6 +109,8 @@ abstract class BaseMOS6502Processor implements
 
     /**
      * Add the value and carry flag to the accumulator using BCD semantics.
+     *
+     * TODO this is a bit of a mess
      */
     protected function addBCDWithCarry(int $iValue): int {
         // Nybbles
@@ -127,6 +129,8 @@ abstract class BaseMOS6502Processor implements
 
     /**
      * Subtract the value and carry flag from the accumulator, updating accordingly.
+     *
+     * TODO this is a bit of a mess
      */
     protected function subByteWithCarry(int $iValue): void {
         $iDiff = ($this->iStatus & self::F_DECIMAL) ?
