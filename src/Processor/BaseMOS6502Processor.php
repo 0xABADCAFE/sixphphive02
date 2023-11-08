@@ -67,6 +67,10 @@ abstract class BaseMOS6502Processor implements
         return $this;
     }
 
+    public function getPC(): int {
+        return $this->iProgramCounter;
+    }
+
     /**
      * Reset the processor to a known state.
      */
