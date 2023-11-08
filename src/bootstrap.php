@@ -23,6 +23,7 @@ const CLASS_MAP = [
   'ABadCafe\\SixPHPhive02\\IDevice' => '/IDevice.php',
   'ABadCafe\\SixPHPhive02\\I8BitProcessor' => '/IProcessor.php',
   'ABadCafe\\SixPHPhive02\\Processor\\MOS6502Processor' => '/Processor/MOS6502Processor.php',
+  'ABadCafe\\SixPHPhive02\\Processor\\BaseMOS6502Processor' => '/Processor/BaseMOS6502Processor.php',
   'ABadCafe\\SixPHPhive02\\Processor\\MOS6502ProcessorQuick' => '/Processor/MOS6502ProcessorQuick.php',
   'ABadCafe\\SixPHPhive02\\Processor\\MOS6502ProcessorDebug' => '/Processor/MOS6502ProcessorDebug.php',
   'ABadCafe\\SixPHPhive02\\Processor\\MOS6502\\IOpcodeEnum' => '/Processor/MOS6502/IOpcodeEnum.php',

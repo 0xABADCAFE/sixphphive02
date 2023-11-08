@@ -22,22 +22,7 @@ use LogicException;
  *
  * Basic implementation.
  */
-class MOS6502Processor implements
-    I8BitProcessor,
-    MOS6502\IConstants,
-    MOS6502\IOpcodeEnum,
-    MOS6502\IInstructionSize,
-    MOS6502\IInstructionCycles
-{
-    // Registers
-    protected int
-        $iAccumulator,      // 8-bit
-        $iXIndex,           // 8-bit
-        $iYIndex,           // 8-bit
-        $iStackPointer,     // 8-bit
-        $iProgramCounter,   // 16-bit
-        $iStatus            // 8-bit,
-    ;
+class MOS6502Processor extends BaseMOS6502Processor {
 
     protected IByteAccessible $oOutside;
 
@@ -74,34 +59,6 @@ class MOS6502Processor implements
         return $this;
     }
 
-    /**
-     * @inheritDoc
-     * @see I8BitProcessor
-     */
-    public function start(): self {
-        $this->run();
-        return $this;
-    }
-
-    /**
-     * @inheritDoc
-     * @see I8BitProcessor
-     */
-    public function setInitialPC(int $iAddress): self {
-        assert($iAddress >= 0 && $iAddress < self::MEM_SIZE, new LogicException());
-        $this->iProgramCounter = $iAddress & self::MEM_MASK;
-        return $this;
-    }
-
-    public function setInitialSR(int $iFlags): self {
-        $this->iStatus = $iFlags & 0xFF;
-        return $this;
-    }
-
-    public function setInitialSP(int $iPos): self {
-        $this->iStackPointer = $iPos & 0xFF;
-        return $this;
-    }
 
     /**
      * Attach to the outside world.
@@ -110,75 +67,6 @@ class MOS6502Processor implements
         $this->oOutside = $oOutside;
         return $this;
     }
-
-    protected function reset(): void {
-        $this->iAccumulator    = 0;
-        $this->iXIndex         = 0;
-        $this->iYIndex         = 0;
-        $this->iStackPointer   = self::STACK_TOP - self::STACK_BASE; // offset in the page at STACK_BASE
-        $this->iProgramCounter = $this->readWord(self::VEC_RES);     // load from reset vector
-        $this->iStatus         = 0;
-    }
-
-    protected static function signByte(int $iValue): int {
-        $iValue &= 0xFF;
-        return ($iValue & self::F_NEGATIVE) ? $iValue - 256 : $iValue;
-    }
-
-    protected function addByteWithCarry(int $iValue): void {
-        //$iSum = ($this->iStatus & self::F_CARRY) + ($iValue & 0xFF) + ($this->iAccumulator & 0xFF);
-
-        $iSum = ($this->iStatus & self::F_CARRY) + $iValue + $this->iAccumulator;
-
-        $iRes = $iSum & 0xFF;
-
-        // Deal with the result
-        $this->iStatus &= ~(self::F_NEGATIVE | self::F_ZERO | self::F_CARRY | self::F_OVERFLOW);
-        $this->iStatus |= ($iRes & self::F_NEGATIVE) | ($iRes ? 0 : self::F_ZERO);
-        $this->iStatus |= ($iSum & 0x100) ? self::F_CARRY : 0;
-        $this->iStatus |= (
-            ($iValue & self::F_NEGATIVE) == ($this->iAccumulator & self::F_NEGATIVE) &&
-            ($iValue & self::F_NEGATIVE) != ($iRes & self::F_NEGATIVE)
-        ) ? self::F_OVERFLOW : 0;
-
-        $this->iAccumulator = $iRes;
-    }
-
-    protected function subByteWithCarry(int $iValue): void {
-        //$iDiff = ($this->iAccumulator & 0xFF) - ($iValue & 0xFF) - (~$this->iStatus & self::F_CARRY);
-        $iDiff = $this->iAccumulator - $iValue - (~$this->iStatus & self::F_CARRY);
-
-        $iRes = $iDiff & 0xFF;
-
-        // Deal with the result
-        $this->iStatus &= ~(self::F_NEGATIVE | self::F_ZERO | self::F_CARRY | self::F_OVERFLOW);
-        $this->iStatus |= ($iRes & self::F_NEGATIVE) | ($iRes ? 0 : self::F_ZERO);
-        $this->iStatus |= ($iDiff & 0x100) ? 0 : self::F_CARRY;
-        $this->iStatus |= (
-            ($iValue & self::F_NEGATIVE) != ($this->iAccumulator & self::F_NEGATIVE) &&
-            ($this->iAccumulator & self::F_NEGATIVE) != ($iRes & self::F_NEGATIVE)
-        ) ? self::F_OVERFLOW : 0;
-
-        $this->iAccumulator = $iRes;
-    }
-
-    protected function cmpByte(int $iTo, int $iValue): void {
-        //$iDiff = ($iTo & 0xFF) - ($iValue & 0xFF) ;//- (~$this->iStatus & self::F_CARRY);
-        $iDiff = $iTo - $iValue ;//- (~$this->iStatus & self::F_CARRY);
-
-        $iRes = $iDiff & 0xFF;
-
-        // Deal with the result
-        $this->iStatus &= ~(self::F_NEGATIVE | self::F_ZERO | self::F_CARRY);
-        $this->iStatus |= ($iRes & self::F_NEGATIVE) | ($iRes ? 0 : self::F_ZERO);
-        $this->iStatus |= ($iDiff & 0x100) ? 0 : self::F_CARRY;
-    }
-
-
-//     protected function readByteSigned(int $iAddress): int {
-//         $iValue = ord($this->sMemory[$iAddress & self::MEM_MASK]);
-//         return ($iValue & self::F_NEGATIVE) ? $iValue - 256 : $iValue;
-//     }
 
     /**
      * Read a raw 16-bit value from the given address. Returns an unsigned value. Automatically handles addresses that
@@ -289,46 +177,20 @@ class MOS6502Processor implements
         $this->iStackPointer = ($this->iStackPointer - 1) & 0xFF;
     }
 
-    /**
-     * Set the N and Z flags based on the operand
-     */
-    protected function updateNZ(int $iValue): void {
-        $this->iStatus &= ~(self::F_NEGATIVE | self::F_ZERO);
-        $this->iStatus |= ($iValue & self::F_NEGATIVE) | (($iValue & 0xFF) ? 0 : self::F_ZERO);
-    }
-
     protected function lsrMemory(int $iAddress): void {
-        $iValue   = $this->oOutside->readByte($iAddress);
-        $this->iStatus &= ~self::F_CARRY;
-        $this->iStatus |= ($iValue & self::F_CARRY);
-        $this->updateNZ($iValue >>= 1);
-        $this->oOutside->writeByte($iAddress, $iValue);
+        $this->oOutside->writeByte($iAddress, $this->shiftRightWithCarry($this->oOutside->readByte($iAddress)));
     }
 
     protected function aslMemory(int $iAddress): void {
-        $iValue   = $this->oOutside->readByte($iAddress);
-        $this->iStatus &= ~self::F_CARRY;
-        $this->iStatus |= ($iValue & self::F_NEGATIVE) >> 7; // sign -> carry
-        $this->updateNZ($iValue = (($iValue << 1) & 0xFF));
-        $this->oOutside->writeByte($iAddress, $iValue);
+        $this->oOutside->writeByte($iAddress, $this->shiftLeftWithCarry($this->oOutside->readByte($iAddress)));
     }
 
     protected function rolMemory(int $iAddress): void {
-        $iValue = $this->oOutside->readByte($iAddress);
-        $iCarry = ($this->iStatus & self::F_CARRY);
-        $this->iStatus &= ~self::F_CARRY;
-        $this->iStatus |= ($iValue & self::F_NEGATIVE) >> 7; // sign -> carry
-        $this->updateNZ( $iValue = ((($iValue << 1) | $iCarry) & 0xFF) );
-        $this->oOutside->writeByte($iAddress, $iValue);
+        $this->oOutside->writeByte($iAddress, $this->rotateLeftWithCarry($this->oOutside->readByte($iAddress)));
     }
 
     protected function rorMemory(int $iAddress): void {
-        $iValue = $this->oOutside->readByte($iAddress);
-        $iCarry = ($this->iStatus & self::F_CARRY) << 7; // carry -> sign
-        $this->iStatus &= ~self::F_CARRY;
-        $this->iStatus |= ($iValue & self::F_CARRY); // carry -> carry
-        $this->updateNZ( $iValue = (($iValue >> 1) | $iCarry) );
-        $this->oOutside->writeByte($iAddress, $iValue);
+        $this->oOutside->writeByte($iAddress, $this->rotateRightWithCarry($this->oOutside->readByte($iAddress)));
     }
 
     protected function run() {
@@ -641,22 +503,20 @@ class MOS6502Processor implements
 
             case self::BIT_ZP: {
                 $iMem = $this->oOutside->readByte($this->addrZeroPageByte());
-                $this->iStatus &= ~(self::F_NEGATIVE | self::F_OVERFLOW | self::F_ZERO);
-                $this->iStatus |= ($iMem & (self::F_NEGATIVE|self::F_OVERFLOW)) | (
+                $this->iStatus &= self::F_CLR_NZV;
+                $this->iStatus |= ($iMem & (self::F_NEGATIVE | self::F_OVERFLOW)) | (
                     $iMem & $this->iAccumulator ? 0 : self::F_ZERO
                 );
                 break;
             }
             case self::BIT_AB: {
                 $iMem = $this->oOutside->readByte($this->addrAbsoluteByte());
-                $this->iStatus &= ~(self::F_NEGATIVE | self::F_OVERFLOW | self::F_ZERO);
+                $this->iStatus &= self::F_CLR_NZV;
                 $this->iStatus |= ($iMem & (self::F_NEGATIVE|self::F_OVERFLOW)) | (
                     $iMem & $this->iAccumulator ? 0 : self::F_ZERO
                 );
                 break;
-
             }
-
 
             // Conditional
             case self::BCC: {
@@ -726,7 +586,7 @@ class MOS6502Processor implements
                     return false;
                 }
 
-                 $this->iProgramCounter = $iNewProgramCounter;
+                $this->iProgramCounter = $iNewProgramCounter;
 
                 // Avoid the program counter update, since we releaded it anyway
                 return true;
@@ -777,7 +637,7 @@ class MOS6502Processor implements
 
             case self::BRK: {
                 // Push PC+2 as return address
-                $iValAddress   = $this->iProgramCounter + 1;
+                //$iValAddress    = $this->iProgramCounter + 1;
                 $iReturnAddress = ($this->iProgramCounter + 2) & self::MEM_MASK;
                 $this->pushByte($iReturnAddress >> 8);
                 $this->pushByte($iReturnAddress & 0xFF);

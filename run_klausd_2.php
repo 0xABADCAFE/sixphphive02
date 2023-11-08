@@ -28,10 +28,6 @@ $o6502
 	$062E:	JMP $062E
 	$0631:	JMP $0631
 */
-//     ->addBreakpoint(0x0625, 1)
-//     ->addBreakpoint(0x0628, 1)
-//     ->addBreakpoint(0x062B, 1)
-//     ->addBreakpoint(0x062E, 1)
-//     ->addBreakpoint(0x0631, 1);
+
 
 $o6502->start();
