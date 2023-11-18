@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace ABadCafe\SixPHPhive02\Device;
 
+use LogicException;
+
 /**
  * AddressMap
  *

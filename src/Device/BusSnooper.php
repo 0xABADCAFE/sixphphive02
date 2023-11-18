@@ -91,4 +91,19 @@ class BusSnooper implements IByteAccessible {
     public function bypass(): IByteAccessible {
         return $this->oTarget;
     }
+
+    /**
+     * Directly read from the observed target
+     */
+    public function readDirect(int $iAddress, int $iLength): array {
+        assert($iLength > 0, new LogicException('Invalid length'));
+        $aResult = [];
+        $iAddress &= self::ADDR_MASK;
+        while ($iLength--) {
+            $aResult[$iAddress] = $this->oTarget->readByte($iAddress);
+            $iAddress = ($iAddress + 1) & self::ADDR_MASK;
+        }
+        return $aResult;
+    }
+
 }
